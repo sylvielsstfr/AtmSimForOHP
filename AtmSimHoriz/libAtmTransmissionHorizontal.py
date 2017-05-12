@@ -24,6 +24,7 @@ WLMAX=1200. # nm
 
 NUMIN=1e7/WLMAX  # cm-1
 NUMAX=1e7/WLMIN  # cm-1
+NURES=100.0 # cm-1
 
 Pa_to_Atm = 0.00000986923267
 hPa_to_Atm=Pa_to_Atm*100  # libRadTran provides pressure in hPa
@@ -52,6 +53,7 @@ L=0.0065*u.K/u.m  # refroidissement en fonction de l'altitude
 # OHP
 distance=200*u.m
 altitude=650*u.m
+Distance_source_tel=200*u.m/(1*u.cm)
 
 
 
@@ -102,8 +104,11 @@ class Hitran:
         wavenum=np.linspace(NUMIN,NUMAX,arr.shape[0])
         nu,coef =  wavenum,arr
         return nu,coef
+    
+        
+    
     def getO3Huggins(self,P,T):  
-        file=os.path.join('O3Xsec',O3Huyggins_XSecFiles[5]) # T=300k
+        file=os.path.join('O3Xsec',O3Huggins_XSecFiles[5]) # T=300k
         df=pd.read_table(file,delimiter=' ',usecols=[1,2,3,4,5,6,7,8,9,10]) 
         arr=df.values.flatten()
         arr = arr[~np.isnan(arr)]
@@ -117,7 +122,7 @@ class Hitran:
         xsecChapuis_o3=data_rto3[:,2]*1e-21
         return wl_o3,xsecChapuis_o3
     
-    
+#--------------------------------------------------------------------------------------    
     
 class Rayleigh:
     """
@@ -175,9 +180,9 @@ class Rayleigh:
         C= 1-0.0722*np.exp(-2*np.log(wavelength/(400.*u.nm)))
         OD=A*B/C       
         return OD
+#-----------------------------------------------------------------------------------        
         
-        
-
+PlotFlag=False
 
 
 def PlotCoef(nu1,c1,nu2,c2,nu3,c3,titlename):
@@ -213,7 +218,47 @@ def PlotXSec2(wl1,c1,wl2,c2,wl3,c3,titlename):
     plt.ylabel('cross-section $cm^{2}/molecule $')
     plt.legend(loc='best')
     
+def PlotRayleighTransmission(wl,T_us,T_mw,T_ms,T_vod):
+    plt.figure()
+    plt.plot(wl,T_us,'r',label='horiz us')
+    plt.plot(wl,T_mw,'b',label='horiz mw')
+    plt.plot(wl,T_ms,'g',label='horiz ms')
+    plt.plot(wl,T_vod,'k',label='vertical')
+    plt.title('Rayleigh transmission at StarDice@OHP')
+    plt.ylabel('transmission')
+    plt.xlabel('wavelength (nm)')
+    plt.legend()
     
+def PlotRawTransmittance(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,titlename):
+    plt.figure()
+    plt.plot(nu_t_ms,trans_ms,'g',lw=0.5,label='ms')
+    plt.plot(nu_t_us,trans_us,'b',lw=0.5,label='us')
+    plt.plot(nu_t_mw,trans_mw,'r',lw=0.5,label='mw')
+    plt.title(titlename)
+    plt.xlabel('wavenumber in $cm^{-1}$')
+    plt.ylabel('raw transmittance ')
+    plt.legend()      
+    
+def PlotSmoothTransmittance(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,titlename):
+    plt.figure()
+    plt.plot(nu_t_ms,trans_ms,'g',label='ms')
+    plt.plot(nu_t_us,trans_us,'b',label='us')
+    plt.plot(nu_t_mw,trans_mw,'r',label='mw')
+    plt.title(titlename)
+    plt.xlabel('wavenumber in $cm^{-1}$')
+    plt.ylabel('smooth air transmittance ')
+    plt.legend()
+
+def PlotSmoothTransmittance2(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,titlename):    
+    plt.figure()
+    plt.plot(1e7/nu_t_ms,trans_ms,'g',label='ms')
+    plt.plot(1e7/nu_t_us,trans_us,'b',label='us')
+    plt.plot(1e7/nu_t_mw,trans_mw,'r',label='mw')
+    plt.title(titlename)
+    plt.xlabel('wavelength in nm ')
+    plt.ylabel('smooth Air transmission')
+    plt.xlim(500,1000)
+    plt.legend()    
 
 #####################################################################
 # The program simulation start here
@@ -232,7 +277,7 @@ if __name__ == "__main__":
     
  
     
-    
+    #----------------------------------------------------------------------------------------------
     # retrieve atmospheric data on Temeprature, Pressure and Air density, and species densities 
     #----------------------------------------------------------------------------------------------
     df=pd.read_csv(atm_ground_file)
@@ -279,52 +324,83 @@ if __name__ == "__main__":
     Patm_ms = P_ms*hPa_to_Atm
 
 
-  
+    #---------------------------------  
     # Initialisation of Hapi/Hitran
     # ---------------------------------
     hitr=Hitran()
     
+    ######### O2 ##################################
+    
+    print '*******************************************************************************'
+    print '*                 Compute O2 '
+    print '*******************************************************************************'
     
     nu_us_o2,coef_us_o2=hitr.getO2(Patm_us,T_us)
     nu_mw_o2,coef_mw_o2=hitr.getO2(Patm_mw,T_mw)
     nu_ms_o2,coef_ms_o2=hitr.getO2(Patm_ms,T_ms)
-    PlotCoef(nu_us_o2,coef_us_o2,nu_mw_o2,coef_mw_o2,nu_ms_o2,coef_ms_o2,'absorption coefficient for $O_2$')
+    if PlotFlag:
+        PlotCoef(nu_us_o2,coef_us_o2,nu_mw_o2,coef_mw_o2,nu_ms_o2,coef_ms_o2,'absorption coefficient for $O_2$')
+    
+ 
     
     
+    ########## H2O #############################
+    print '*******************************************************************************'
+    print '*                 Compute H2O '
+    print '*******************************************************************************'
     
     nu_us_h2o,coef_us_h2o=hitr.getH2O(Patm_us,T_us)
     nu_mw_h2o,coef_mw_h2o=hitr.getH2O(Patm_mw,T_mw)
     nu_ms_h2o,coef_ms_h2o=hitr.getH2O(Patm_ms,T_ms)
-    PlotCoef(nu_us_h2o,coef_us_h2o,nu_mw_h2o,coef_mw_h2o,nu_ms_h2o,coef_ms_h2o,'absorption coefficient for $H_2O$')
+    if PlotFlag:
+        PlotCoef(nu_us_h2o,coef_us_h2o,nu_mw_h2o,coef_mw_h2o,nu_ms_h2o,coef_ms_h2o,'absorption coefficient for $H_2O$')
     
-    
+    print '*******************************************************************************'
+    print '*                 Compute CO2 '
+    print '*******************************************************************************'
     
     nu_us_co2,coef_us_co2=hitr.getCO2(Patm_us,T_us)
     nu_mw_co2,coef_mw_co2=hitr.getCO2(Patm_mw,T_mw)
     nu_ms_co2,coef_ms_co2=hitr.getCO2(Patm_ms,T_ms)
-    PlotCoef(nu_us_co2,coef_us_co2,nu_mw_co2,coef_mw_co2,nu_ms_co2,coef_ms_co2,'absorption coefficient for $CO_2$')
+    if PlotFlag:
+        PlotCoef(nu_us_co2,coef_us_co2,nu_mw_co2,coef_mw_co2,nu_ms_co2,coef_ms_co2,'absorption coefficient for $CO_2$')
     
     
+    print '*******************************************************************************'
+    print '*                 Compute NO2 '
+    print '*******************************************************************************'
     nu_us_no2,coef_us_no2=hitr.getNO2(Patm_us,T_us)
     nu_mw_no2,coef_mw_no2=hitr.getNO2(Patm_mw,T_mw)
     nu_ms_no2,coef_ms_no2=hitr.getNO2(Patm_ms,T_ms)
-    PlotXSec(nu_us_no2,coef_us_no2,nu_mw_no2,coef_mw_no2,nu_ms_no2,coef_ms_no2,'cross-section for $NO_2$')
+    if PlotFlag:
+        PlotXSec(nu_us_no2,coef_us_no2,nu_mw_no2,coef_mw_no2,nu_ms_no2,coef_ms_no2,'cross-section for $NO_2$')
     
-    
+    print '*******************************************************************************'
+    print '*                 Compute O3 Huggins '
+    print '*******************************************************************************'
     nu_us_o3Hug,coef_us_o3Hug=hitr.getO3Huggins(Patm_us,T_us)
     nu_mw_o3Hug,coef_mw_o3Hug=hitr.getO3Huggins(Patm_mw,T_mw)
     nu_ms_o3Hug,coef_ms_o3Hug=hitr.getO3Huggins(Patm_ms,T_ms)
-    PlotXSec(nu_us_o3Hug,coef_us_o3Hug,nu_mw_o3Hug,coef_mw_o3Hug,nu_ms_o3Hug,coef_ms_o3Hug,'cross-section for $O_3$ Huggins band')
+    if PlotFlag:
+        PlotXSec(nu_us_o3Hug,coef_us_o3Hug,nu_mw_o3Hug,coef_mw_o3Hug,nu_ms_o3Hug,coef_ms_o3Hug,'cross-section for $O_3$ Huggins band')
     
-    
+    print '*******************************************************************************'
+    print '*                 Compute O3 Chappuis '
+    print '*******************************************************************************'
     wl_us_o3Chap,coef_us_o3Chap=hitr.getO3Chappuis(Patm_us,T_us)
     wl_mw_o3Chap,coef_mw_o3Chap=hitr.getO3Chappuis(Patm_mw,T_mw)
     wl_ms_o3Chap,coef_ms_o3Chap=hitr.getO3Chappuis(Patm_ms,T_ms)
-    PlotXSec2(wl_us_o3Chap,coef_us_o3Chap,wl_mw_o3Chap,coef_mw_o3Chap,wl_ms_o3Chap,coef_ms_o3Chap,'cross-section for $O_3$ Chappuis band')
+    if PlotFlag:
+        PlotXSec2(wl_us_o3Chap,coef_us_o3Chap,wl_mw_o3Chap,coef_mw_o3Chap,wl_ms_o3Chap,coef_ms_o3Chap,'cross-section for $O_3$ Chappuis band')
     
     
     
-    ## Rayleigh
+    print '*******************************************************************************'
+    print '*                 Compute Rayleigh '
+    print '*******************************************************************************'
+    #---------------------------
+    ## Rayleigh Transmittance
+    #------------------------------
     
     XDepth_us=d_Air_us*distance/N_A*M_air_dry
     XDepth_mw=d_Air_mw*distance/N_A*M_air_dry
@@ -342,29 +418,94 @@ if __name__ == "__main__":
     
     rayleigh_vod=ray.RayOptDepth(wavelength, altitude=altitude)
     
-    T_us=np.exp(-rayleigh_od_us.decompose())
-    T_mw=np.exp(-rayleigh_od_mw.decompose())
-    T_ms=np.exp(-rayleigh_od_ms.decompose())
-    T_vod=np.exp(-rayleigh_vod.decompose())
+    Tr_us=np.exp(-rayleigh_od_us.decompose())
+    Tr_mw=np.exp(-rayleigh_od_mw.decompose())
+    Tr_ms=np.exp(-rayleigh_od_ms.decompose())
+    Tr_vod=np.exp(-rayleigh_vod.decompose())
+    
+    if PlotFlag:
+        PlotRayleighTransmission(wavelength,Tr_us,Tr_mw,Tr_ms,Tr_vod)
     
     
+    
+    
+#------------------------------------------------------------------------------------------    
+    
+
+#### --- PWV ----    
+    coeff_us_l_h2o=coef_us_h2o*d_H2O_us # in cm-1
+    coeff_mw_l_h2o=coef_mw_h2o*d_H2O_mw  # in cm-1
+    coeff_ms_l_h2o=coef_ms_h2o*d_H2O_ms  # in cm-1
+    
+    nu_t_us,trans_us = transmittanceSpectrum(nu_us_h2o,coeff_us_l_h2o,Environment={'l': Distance_source_tel})
+    nu_t_mw,trans_mw = transmittanceSpectrum(nu_mw_h2o,coeff_mw_l_h2o,Environment={'l': Distance_source_tel})
+    nu_t_ms,trans_ms = transmittanceSpectrum(nu_ms_h2o,coeff_ms_l_h2o,Environment={'l': Distance_source_tel})
+    
+    if PlotFlag:
+        PlotRawTransmittance(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,'Air transmittance for $H_2O$')
+    
+    
+    nu_t_us_smooth_h2o,trans_us_smooth_h2o,i1,i2,slit = convolveSpectrum(nu_t_us,trans_us,SlitFunction=SLIT_RECTANGULAR,Resolution=100.)
+    nu_t_mw_smooth_h2o,trans_mw_smooth_h2o,i1,i2,slit = convolveSpectrum(nu_t_mw,trans_mw,SlitFunction=SLIT_RECTANGULAR,Resolution=100.)
+    nu_t_ms_smooth_h2o,trans_ms_smooth_h2o,i1,i2,slit = convolveSpectrum(nu_t_ms,trans_ms,SlitFunction=SLIT_RECTANGULAR,Resolution=100.)
+    
+    if PlotFlag:
+        PlotSmoothTransmittance(nu_t_us_smooth_h2o,trans_us_smooth_h2o,nu_t_mw_smooth_h2o,trans_mw_smooth_h2o,nu_t_ms_smooth_h2o,trans_ms_smooth_h2o,'Smoothed Air transmittance for $H_2O$ (StarDice@OHP)')
+        PlotSmoothTransmittance2(nu_t_us_smooth_h2o,trans_us_smooth_h2o,nu_t_mw_smooth_h2o,trans_mw_smooth_h2o,nu_t_ms_smooth_h2o,trans_ms_smooth_h2o,'Smoothed Air transmittance for $H_2O$ (StarDice@OHP)')
+    
+    
+    
+#### --- O2 ----    
+    coeff_us_l_o2=coef_us_o2*d_O2_us # in cm-1
+    coeff_mw_l_o2=coef_mw_o2*d_O2_mw  # in cm-1
+    coeff_ms_l_o2=coef_ms_o2*d_O2_ms  # in cm-1
+    
+   
+    
+    nu_t_us,trans_us = transmittanceSpectrum(nu_us_o2,coeff_us_l_o2,Environment={'l': Distance_source_tel})
+    nu_t_mw,trans_mw = transmittanceSpectrum(nu_mw_o2,coeff_mw_l_o2,Environment={'l': Distance_source_tel})
+    nu_t_ms,trans_ms = transmittanceSpectrum(nu_ms_o2,coeff_ms_l_o2,Environment={'l': Distance_source_tel})
+    
+    if PlotFlag:
+        PlotRawTransmittance(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,'Air transmittance for $O_2$')
+    
+    
+    nu_t_us_smooth_o2,trans_us_smooth_o2,i1,i2,slit = convolveSpectrum(nu_t_us,trans_us,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    nu_t_mw_smooth_o2,trans_mw_smooth_o2,i1,i2,slit = convolveSpectrum(nu_t_mw,trans_mw,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    nu_t_ms_smooth_o2,trans_ms_smooth_o2,i1,i2,slit = convolveSpectrum(nu_t_ms,trans_ms,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    
+    if PlotFlag:
+        PlotSmoothTransmittance(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Smoothed Air transmittance for $O_2$ (StarDice@OHP)')
+        PlotSmoothTransmittance2(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Smoothed Air transmittance for $O_2$ (StarDice@OHP)')    
+    
+ 
+    
+#### --- O3 ----    
+
+    coeff_us_l=coef_us_o3Hug*d_O3_us # in cm-1
+    coeff_mw_l=coef_mw_o3Hug*d_O3_mw # in cm-1
+    coeff_ms_l=coef_ms_o3Hug*d_O3_ms # in cm-1
+    
+    nu_t_us_o3hug,trans_us_o3hug = transmittanceSpectrum(nu_us_o3Hug,coeff_us_l,Environment={'l': Distance_source_tel})
+    nu_t_mw_o3hug,trans_mw_o3hug = transmittanceSpectrum(nu_mw_o3Hug,coeff_mw_l,Environment={'l': Distance_source_tel})
+    nu_t_ms_o3hug,trans_ms_o3hug = transmittanceSpectrum(nu_ms_o3Hug,coeff_ms_l,Environment={'l': Distance_source_tel})
+    
+    #if PlotFlag:
+    PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
+    
+    #PlotSmoothTransmittance2(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
+    
+    
+    
+    
+ ####### Plot
+
+   
+   
+   
     plt.figure()
-    plt.plot(wavelength,T_us,'r',label='horiz us')
-    plt.plot(wavelength,T_mw,'b',label='horiz mw')
-    plt.plot(wavelength,T_ms,'g',label='horiz ms')
-    plt.plot(wavelength,T_vod,'k',label='vertical')
-    plt.title('Rayleigh transmission at StarDice@OHP')
-    plt.ylabel('transmission')
-    plt.xlabel('wavelength (nm)')
+    plt.plot(wavelength,Tr_us,'-',label='Rayleigh')
+    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'-',label='$H_2O$')
+    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'-',label='$O_2$')
     plt.legend()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
