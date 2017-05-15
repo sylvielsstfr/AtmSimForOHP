@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+libAtmTransmissionHorizontal.py
+================================
 
-This is a temporary script file.
+- Author Syvie Dagoret-Campagne
+- Affiliation : LAL/IN2P3/CNRS
+- date : May 15th 2017
+- update :
+
+library to compute Horizontal Air transparency at OHP.
+It uses 
+- Hitran absorption and cross-section.
+- libRadTran air densities for US,MW,MS atmospheric profiles
+
 """
 
 import os
@@ -112,7 +122,9 @@ class Hitran:
         df=pd.read_table(file,delimiter=' ',usecols=[1,2,3,4,5,6,7,8,9,10]) 
         arr=df.values.flatten()
         arr = arr[~np.isnan(arr)]
-        wavenum=np.linspace(NUMIN,NUMAX,arr.shape[0])
+        NUMIN_O3=29164.0
+        NUMAX_O3=40798.0
+        wavenum=np.linspace(NUMIN_O3,NUMAX_O3,arr.shape[0])
         nu,coef =  wavenum,arr
         return nu,coef
     
@@ -257,7 +269,7 @@ def PlotSmoothTransmittance2(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,
     plt.title(titlename)
     plt.xlabel('wavelength in nm ')
     plt.ylabel('smooth Air transmission')
-    plt.xlim(500,1000)
+    #plt.xlim(500,1000)
     plt.legend()    
 
 #####################################################################
@@ -268,7 +280,7 @@ def PlotSmoothTransmittance2(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,
 if __name__ == "__main__":
     
     params = {'legend.fontsize': 'x-large',
-          'figure.figsize': (8, 6),
+          'figure.figsize': (12, 8),
          'axes.labelsize': 'x-large',
          'axes.titlesize':'x-large',
          'xtick.labelsize':'x-large',
@@ -381,8 +393,8 @@ if __name__ == "__main__":
     nu_us_o3Hug,coef_us_o3Hug=hitr.getO3Huggins(Patm_us,T_us)
     nu_mw_o3Hug,coef_mw_o3Hug=hitr.getO3Huggins(Patm_mw,T_mw)
     nu_ms_o3Hug,coef_ms_o3Hug=hitr.getO3Huggins(Patm_ms,T_ms)
-    if PlotFlag:
-        PlotXSec(nu_us_o3Hug,coef_us_o3Hug,nu_mw_o3Hug,coef_mw_o3Hug,nu_ms_o3Hug,coef_ms_o3Hug,'cross-section for $O_3$ Huggins band')
+    #if PlotFlag:
+    PlotXSec(nu_us_o3Hug,coef_us_o3Hug,nu_mw_o3Hug,coef_mw_o3Hug,nu_ms_o3Hug,coef_ms_o3Hug,'cross-section for $O_3$ Huggins band')
     
     print '*******************************************************************************'
     print '*                 Compute O3 Chappuis '
@@ -490,9 +502,9 @@ if __name__ == "__main__":
     nu_t_mw_o3hug,trans_mw_o3hug = transmittanceSpectrum(nu_mw_o3Hug,coeff_mw_l,Environment={'l': Distance_source_tel})
     nu_t_ms_o3hug,trans_ms_o3hug = transmittanceSpectrum(nu_ms_o3Hug,coeff_ms_l,Environment={'l': Distance_source_tel})
     
-    if PlotFlag:
-        PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
-        PlotSmoothTransmittance2(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
+    #if PlotFlag:
+    PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
+    PlotSmoothTransmittance2(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
  
     
     
@@ -557,6 +569,8 @@ if __name__ == "__main__":
     plt.xlabel('$\lambda$ (nm)',fontsize=16, fontweight='bold')
     plt.ylabel('air transmittance',fontsize=16, fontweight='bold')
     plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
+    #plt.ylim(0,1.1)
+    plt.grid(True)
     plt.savefig('airrransmittanceAtOHP.png')
     
     
