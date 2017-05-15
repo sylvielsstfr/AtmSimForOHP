@@ -480,7 +480,7 @@ if __name__ == "__main__":
     
  
     
-#### --- O3 ----    
+#### --- O3 Huggins ----    
 
     coeff_us_l=coef_us_o3Hug*d_O3_us # in cm-1
     coeff_mw_l=coef_mw_o3Hug*d_O3_mw # in cm-1
@@ -490,11 +490,54 @@ if __name__ == "__main__":
     nu_t_mw_o3hug,trans_mw_o3hug = transmittanceSpectrum(nu_mw_o3Hug,coeff_mw_l,Environment={'l': Distance_source_tel})
     nu_t_ms_o3hug,trans_ms_o3hug = transmittanceSpectrum(nu_ms_o3Hug,coeff_ms_l,Environment={'l': Distance_source_tel})
     
-    #if PlotFlag:
-    PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
+    if PlotFlag:
+        PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
+        PlotSmoothTransmittance2(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
+ 
     
-    #PlotSmoothTransmittance2(nu_t_us_smooth_o2,trans_us_smooth_o2,nu_t_mw_smooth_o2,trans_mw_smooth_o2,nu_t_ms_smooth_o2,trans_ms_smooth_o2,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
     
+    
+#### --- O3 Chappuis ----    
+
+    coeff_us_l=coef_us_o3Chap*d_O3_us # in cm-1
+    coeff_mw_l=coef_mw_o3Chap*d_O3_mw # in cm-1
+    coeff_ms_l=coef_ms_o3Chap*d_O3_ms # in cm-1
+    
+    tau_o3chap_us= coeff_us_l*Distance_source_tel
+    tau_o3chap_mw= coeff_mw_l*Distance_source_tel
+    tau_o3chap_ms= coeff_ms_l*Distance_source_tel
+       
+   
+    
+    Tr_o3chap_us=np.exp(-tau_o3chap_us.decompose())
+    Tr_o3chap_mw=np.exp(-tau_o3chap_mw.decompose())
+    Tr_o3chap_ms=np.exp(-tau_o3chap_ms.decompose())
+    
+    
+ #### --- CO2 ----
+ 
+    coeff_us_l_co2=coef_us_co2*d_CO2_us # in cm-1
+    coeff_mw_l_co2=coef_mw_co2*d_CO2_mw  # in cm-1
+    coeff_ms_l_co2=coef_ms_co2*d_CO2_ms  # in cm-1
+    
+   
+    
+    nu_t_us,trans_us = transmittanceSpectrum(nu_us_co2,coeff_us_l_co2,Environment={'l': Distance_source_tel})
+    nu_t_mw,trans_mw = transmittanceSpectrum(nu_mw_co2,coeff_mw_l_co2,Environment={'l': Distance_source_tel})
+    nu_t_ms,trans_ms = transmittanceSpectrum(nu_ms_co2,coeff_ms_l_co2,Environment={'l': Distance_source_tel})
+    
+    if PlotFlag:
+        PlotRawTransmittance(nu_t_us,trans_us,nu_t_mw,trans_mw,nu_t_ms,trans_ms,'Air transmittance for $CO_2$')
+    
+    
+    nu_t_us_smooth_co2,trans_us_smooth_co2,i1,i2,slit = convolveSpectrum(nu_t_us,trans_us,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    nu_t_mw_smooth_co2,trans_mw_smooth_co2,i1,i2,slit = convolveSpectrum(nu_t_mw,trans_mw,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    nu_t_ms_smooth_co2,trans_ms_smooth_co2,i1,i2,slit = convolveSpectrum(nu_t_ms,trans_ms,SlitFunction=SLIT_RECTANGULAR,Resolution=100.0)
+    
+    if PlotFlag:
+        PlotSmoothTransmittance(nu_t_us_smooth_co2,trans_us_smooth_co2,nu_t_mw_smooth_co2,trans_mw_smooth_co2,nu_t_ms_smooth_co2,trans_ms_smooth_co2,'Smoothed Air transmittance for $CO_2$ (StarDice@OHP)')
+        PlotSmoothTransmittance2(nu_t_us_smooth_co2,trans_us_smooth_co2,nu_t_mw_smooth_co2,trans_mw_smooth_co2,nu_t_ms_smooth_co2,trans_ms_smooth_co2,'Smoothed Air transmittance for $CO_2$ (StarDice@OHP)')      
+ 
     
     
     
@@ -504,8 +547,25 @@ if __name__ == "__main__":
    
    
     plt.figure()
-    plt.plot(wavelength,Tr_us,'-',label='Rayleigh')
-    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'-',label='$H_2O$')
-    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'-',label='$O_2$')
+    plt.plot(wavelength,Tr_us,'b-',lw=2,label='Rayleigh')
+    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'r-',lw=2,label='$H_2O$')
+    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'g-',lw=2,label='$O_2$')
+    plt.plot(1e7/nu_t_us_o3hug,trans_us_o3hug,'m-',lw=2,label='$O_3-Huggins$')
+    plt.plot(1e7/nu_t_us_smooth_co2,trans_us_smooth_co2,'k-',lw=2,label='$CO_2$')
+    plt.plot(wl_us_o3Chap,Tr_o3chap_us,'-',color='grey',lw=2,label='$O_3-Chappuis$')
     plt.legend()
+    plt.xlabel('$\lambda$ (nm)',fontsize=16, fontweight='bold')
+    plt.ylabel('air transmittance',fontsize=16, fontweight='bold')
+    plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
+    plt.savefig('airrransmittanceAtOHP.png')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
