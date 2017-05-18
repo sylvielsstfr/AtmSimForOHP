@@ -691,10 +691,10 @@ if __name__ == "__main__":
     N_VAOD=VAOD_quantiles.shape[0]
     
     plt.figure()
-    plt.plot(wavelength2,np.exp(-HAOD),'-',color='grey',lw=2,label='Aerosols q=5%-95%')
+    plt.plot(wavelength2,np.exp(-HAOD),'-',color='black',lw=2,label='Aerosols q=5%-95%')
     for i in np.arange(0,N_VAOD):
         HAOD=HAeroOptDepth(wavelength2,L=200.*u.m,HP=1.0*u.km,tau_aerosols_550=VAOD_quantiles[i])
-        plt.plot(wavelength2,np.exp(-HAOD.decompose()),'-',color='grey',lw=1)
+        plt.plot(wavelength2,np.exp(-HAOD.decompose()),'-',color='black',lw=1)
     plt.plot(wavelength,Tr_us,'b-',lw=2,label='Rayleigh')
     plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'r-',lw=2,label='$H_2O$')
     plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'g-',lw=2,label='$O_2$')
@@ -707,7 +707,7 @@ if __name__ == "__main__":
     plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
     #plt.ylim(0,1.1)
     plt.grid(True)
-    plt.savefig('airrransmittanceAtOHP3.png')
+    plt.savefig('airrransmittanceAtOHP4.png')
     
     
     
