@@ -76,7 +76,7 @@ distance=200*u.m
 altitude=650*u.m
 Distance_source_tel=200*u.m/(1*u.cm)
 
-
+VAOD_quantiles=np.array([0.03,0.0455,0.09,0.244,0.322]) # MERRA2
 
 class Hitran:
     """
@@ -203,8 +203,45 @@ class Rayleigh:
         C= 1-0.0722*np.exp(-2*np.log(wavelength/(400.*u.nm)))
         OD=A*B/C       
         return OD
-#-----------------------------------------------------------------------------------        
+#-----------------------------------------------------------------------------------
+#         AEROSOLS
+#--------------------------------------------------------------------------------------      
+
+def VAeroOptDepth(wavelength,tau_aerosols_550=0.10,alpha_ang=1.22) :
+        """
+        VAeroOptDepth(wavelength, alpha)
+
+        Provide Vertical Aerosols optical depth
+        - Input : wavelength : input wavelength in nm
+        - Input : alpha : Angstrom exponent
+        - Output : OptDepth  : output optical depth no unit for aerosols
+    
+        """
+
+        OD=tau_aerosols_550*np.exp(-alpha_ang*np.log(wavelength/(550*u.nm)))
+        return OD
+  
+def HAeroOptDepth(wavelength,L,HP,tau_aerosols_550=0.10,alpha_ang=1.22) :
+        """
+        VAeroOptDepth(wavelength, alpha)
+
+        Provide Vertical Aerosols optical depth
+        - Input : wavelength : input wavelength in nm
+        - Input : alpha : Angstrom exponent
+        - Output : OptDepth  : output optical depth no unit for aerosols
+    
+        """    
+    
+        VAOD=((L/HP).decompose())*VAeroOptDepth(wavelength,tau_aerosols_550,alpha_ang)
         
+        return VAOD
+
+#--------------------------------------------------------------------------------------
+
+
+
+
+#        
 PlotFlag=False
 
 
@@ -645,6 +682,39 @@ if __name__ == "__main__":
     #plt.ylim(0,1.1)
     plt.grid(True)
     plt.savefig('airrransmittanceAtOHP3.png')
+    
+    
+    
+    wavelength2=np.linspace(200.,1200.,100)*u.nm
+    HAOD=HAeroOptDepth(wavelength2,L=200.*u.m,HP=1.*u.km,tau_aerosols_550=VAOD_quantiles[2])
+    
+    N_VAOD=VAOD_quantiles.shape[0]
+    
+    plt.figure()
+    plt.plot(wavelength2,np.exp(-HAOD),'-',color='grey',lw=2,label='Aerosols q=5%-95%')
+    for i in np.arange(0,N_VAOD):
+        HAOD=HAeroOptDepth(wavelength2,L=200.*u.m,HP=1.0*u.km,tau_aerosols_550=VAOD_quantiles[i])
+        plt.plot(wavelength2,np.exp(-HAOD.decompose()),'-',color='grey',lw=1)
+    plt.plot(wavelength,Tr_us,'b-',lw=2,label='Rayleigh')
+    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'r-',lw=2,label='$H_2O$')
+    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'g-',lw=2,label='$O_2$')
+    plt.plot(1e7/nu_t_us_o3hug,trans_us_o3hug,'m-',lw=2,label='$O_3-Huggins$')
+ #   plt.plot(1e7/nu_t_us_smooth_co2,trans_us_smooth_co2,'k-',lw=2,label='$CO_2$')
+#    plt.plot(wl_us_o3Chap,Tr_o3chap_us,'-',color='grey',lw=2,label='$O_3-Chappuis$')
+    plt.legend(loc='best')
+    plt.xlabel('$\lambda$ (nm)',fontsize=16, fontweight='bold')
+    plt.ylabel('air transmittance',fontsize=16, fontweight='bold')
+    plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
+    #plt.ylim(0,1.1)
+    plt.grid(True)
+    plt.savefig('airrransmittanceAtOHP3.png')
+    
+    
+    
+    
+    
+    
+    
     
     
     
