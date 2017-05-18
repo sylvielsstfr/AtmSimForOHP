@@ -50,6 +50,17 @@ O3Huggins_XSecFiles=['O3_200.0_0.0_29164.0-40798.0_04.xsc','O3_220.0_0.0_29164.0
 O3Chappuis_XSecFiles='O3Chapuis/O3chapuis.txt'
 
 
+libradtran_file_oh='LibRadTran/data/RT_OH_pp_us_sa_rt_z10_wv40.OUT'
+libradtran_file_ls='LibRadTran/data/RT_LS_pp_us_sa_rt_z10_wv40.OUT'
+
+libradtran_file_oh_q5='LibRadTran/data/UVSPEC_REPTRAN_SOLAR_ALT06_COARSE_qpwv5_10.out'
+libradtran_file_oh_q10='LibRadTran/data/UVSPEC_REPTRAN_SOLAR_ALT06_COARSE_qpwv10_10.out'
+libradtran_file_oh_q50='LibRadTran/data/UVSPEC_REPTRAN_SOLAR_ALT06_COARSE_qpwv50_10.out'
+libradtran_file_oh_q90='LibRadTran/data/UVSPEC_REPTRAN_SOLAR_ALT06_COARSE_qpwv90_10.out'
+libradtran_file_oh_q95='LibRadTran/data/UVSPEC_REPTRAN_SOLAR_ALT06_COARSE_qpwv95_10.out'
+
+
+
 # Few constants
 M_air= 28.965338*u.g/u.mol
 M_air_dry=28.9644*u.g/u.mol
@@ -502,9 +513,9 @@ if __name__ == "__main__":
     nu_t_mw_o3hug,trans_mw_o3hug = transmittanceSpectrum(nu_mw_o3Hug,coeff_mw_l,Environment={'l': Distance_source_tel})
     nu_t_ms_o3hug,trans_ms_o3hug = transmittanceSpectrum(nu_ms_o3Hug,coeff_ms_l,Environment={'l': Distance_source_tel})
     
-    #if PlotFlag:
-    PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
-    PlotSmoothTransmittance2(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
+    if PlotFlag:
+        PlotSmoothTransmittance(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins (StarDice@OHP)')
+        PlotSmoothTransmittance2(nu_t_us_o3hug,trans_us_o3hug,nu_t_mw_o3hug,trans_mw_o3hug,nu_t_ms_o3hug,trans_ms_o3hug,'Air transmittance for $O_3$ Huggins(StarDice@OHP)')    
  
     
     
@@ -574,11 +585,66 @@ if __name__ == "__main__":
     plt.savefig('airrransmittanceAtOHP.png')
     
     
+   
+    
+    rtdata1 = np.loadtxt(libradtran_file_oh)
+    x1=rtdata1[:,0]
+    y1=rtdata1[:,1]
+    
+    rtdata2 = np.loadtxt(libradtran_file_ls)
+    x2=rtdata2[:,0]
+    y2=rtdata2[:,1]
+    
+    plt.figure()
+    plt.plot(x1,y1,'k:',lw=2,label='libradtran,ohp,z=1')
+    plt.plot(x2,y2,':',color='grey',lw=2,label='libradtran,lsst,z=1')
+    plt.plot(wavelength,Tr_us,'b-',lw=2,label='Rayleigh')
+    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'r-',lw=2,label='$H_2O$')
+    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'g-',lw=2,label='$O_2$')
+    plt.plot(1e7/nu_t_us_o3hug,trans_us_o3hug,'m-',lw=2,label='$O_3-Huggins$')
+ #   plt.plot(1e7/nu_t_us_smooth_co2,trans_us_smooth_co2,'k-',lw=2,label='$CO_2$')
+#    plt.plot(wl_us_o3Chap,Tr_o3chap_us,'-',color='grey',lw=2,label='$O_3-Chappuis$')
+    plt.legend(loc='best')
+    plt.xlabel('$\lambda$ (nm)',fontsize=16, fontweight='bold')
+    plt.ylabel('air transmittance',fontsize=16, fontweight='bold')
+    plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
+    #plt.ylim(0,1.1)
+    plt.grid(True)
+    plt.savefig('airrransmittanceAtOHP2.png')
+    
+    rtdata3 = np.loadtxt(libradtran_file_oh_q5)
+    x3=rtdata3[:,0]
+    y3=rtdata3[:,1]
+    
+    rtdata4 = np.loadtxt(libradtran_file_oh_q50)
+    x4=rtdata4[:,0]
+    y4=rtdata4[:,1]
+    
+    rtdata5 = np.loadtxt(libradtran_file_oh_q95)
+    x5=rtdata5[:,0]
+    y5=rtdata5[:,1]
     
     
     
     
-    
+    plt.figure()
+    plt.plot(x3,y3,'-',color='orange',lw=1,label='libradtran,ohp,z=1,q=5%,50%,95%')
+    plt.plot(x4,y4,'-',color='orange',lw=1,label='_nolabel_')
+    plt.plot(x5,y5,'-',color='orange',lw=1,label='_nolabel_')
+    plt.plot(x2,y2,':',color='grey',lw=2,label='libradtran,lsst,z=1')
+    plt.plot(wavelength,Tr_us,'b-',lw=2,label='Rayleigh')
+    plt.plot(1e7/nu_t_us_smooth_h2o,trans_us_smooth_h2o,'r-',lw=2,label='$H_2O$')
+    plt.plot(1e7/nu_t_us_smooth_o2,trans_us_smooth_o2,'g-',lw=2,label='$O_2$')
+    plt.plot(1e7/nu_t_us_o3hug,trans_us_o3hug,'m-',lw=2,label='$O_3-Huggins$')
+ #   plt.plot(1e7/nu_t_us_smooth_co2,trans_us_smooth_co2,'k-',lw=2,label='$CO_2$')
+#    plt.plot(wl_us_o3Chap,Tr_o3chap_us,'-',color='grey',lw=2,label='$O_3-Chappuis$')
+    plt.legend(loc='best')
+    plt.xlabel('$\lambda$ (nm)',fontsize=16, fontweight='bold')
+    plt.ylabel('air transmittance',fontsize=16, fontweight='bold')
+    plt.title('Air transmittance for US atm @ OHP',fontsize=16, fontweight='bold')
+    #plt.ylim(0,1.1)
+    plt.grid(True)
+    plt.savefig('airrransmittanceAtOHP3.png')
     
     
     
